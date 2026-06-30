@@ -75,7 +75,7 @@ const FALLBACK = {
 const HORIZONS = [{key:"1h",label:"1h",hours:1},{key:"6h",label:"6h",hours:6},{key:"12h",label:"12h",hours:12},{key:"24h",label:"24h",hours:24},{key:"48h",label:"48h",hours:48},{key:"1sem",label:"1 sem",hours:168}];
 const CATEGORIES = [{key:"crypto",label:"₿ Crypto",assets:["BTC","ETH","SOL"]},{key:"commodity",label:"📦 Matières",assets:["XAU","OIL"]},{key:"stock",label:"📈 Actions",assets:["TSLA","NVDA","AAPL"]}];
 
-let state = { currency:"eur", asset:"BTC", horizon:"24h", countdown:30, activeTab:"prediction", activeCategory:"crypto", liveData:null, loading:true, isLive:false, chartInstance:null };
+let state = { currency:"eur", asset:"BTC", horizon:"24h", countdown:10, activeTab:"prediction", activeCategory:"crypto", liveData:null, loading:true, isLive:false, chartInstance:null };
 
 function fmt(n, cur) {
   const decimals = n < 10 ? 2 : n < 1000 ? 2 : 0;
@@ -85,20 +85,42 @@ function fmtFull(n, cur) {
   return new Intl.NumberFormat('fr-FR', {style:'currency', currency:cur.toUpperCase(), minimumFractionDigits:2, maximumFractionDigits:2}).format(n);
 }
 
-function generateFutureCurve(currentPrice, direction, amplitude, horizonHours, sentimentScore) {
-  const points = 60;
+function getFacteurs(state, indicators, sentimentGlobal, currentPrice) {
+  const live = state.liveData?.facteurs;
+  if(live && live.macro) return live;
+  if(state.liveData?.symbol) {
+    const rsi = indicators.rsi;
+    const macd = indicators.macd;
+    const ma7 = indicators.ma7, ma14 = indicators.ma14;
+    return {
+      macro: sentimentGlobal === "BULLISH" ? "Contexte macro favorable aux actifs risqués en ce moment." : sentimentGlobal === "BEARISH" ? "Contexte macro tendu, pression sur les actifs risqués." : "Contexte macro neutre, peu de catalyseurs directionnels.",
+      sentiment_marche: `RSI à ${rsi} — ${rsi<30?'zone de survente, rebond possible':rsi>70?'zone de surachat, prudence':'zone neutre'}.`,
+      institutionnel: `Score haussier/baissier de ${indicators.bull_score>0?'+':''}${indicators.bull_score} basé sur RSI, MACD et moyennes mobiles.`,
+      technique: `MACD ${macd} · Prix ${currentPrice>ma7?'au-dessus':'en-dessous'} de la MA7 (${ma7?fmt(ma7,state.currency):'N/A'}) et ${currentPrice>ma14?'au-dessus':'en-dessous'} de la MA14 (${ma14?fmt(ma14,state.currency):'N/A'}).`,
+    };
+  }
+  return FALLBACK[state.asset]?.facteurs || {};
+}
+
+function generateFutureCurve(currentPrice, direction, amplitude, horizonHours, sentimentScore, assetKey) {
+  const points = 48;
   const trend = direction === "HAUSSE" ? 1 : direction === "BAISSE" ? -1 : 0;
   const totalMove = trend * amplitude;
   const now = Date.now();
   const intervalMs = (horizonHours * 3600 * 1000) / points;
-  const seed = now / 50000;
+  // Seed unique par actif + horizon pour que chaque vue soit différente
+  let hash = 0;
+  const seedStr = assetKey + horizonHours;
+  for(let i=0;i<seedStr.length;i++){ hash = ((hash<<5)-hash) + seedStr.charCodeAt(i); hash |= 0; }
+  const seed = Math.abs(hash % 1000) / 17;
   const result = [];
   for(let i=0;i<=points;i++){
     const t = now + i*intervalMs;
     const progress = i/points;
     const eased = progress<0.5 ? 2*progress*progress : -1+(4-2*progress)*progress;
     const trendComp = totalMove*eased*currentPrice/100;
-    const noise = (Math.sin(i*1.3+seed*5.1)*0.3 + Math.sin(i*3.7+seed*2.3)*0.18 + Math.cos(i*0.9+seed*8.4)*0.12 + Math.sin(i*5.1+seed*1.7)*0.08) * (1.2+Math.abs(sentimentScore)*0.2) * currentPrice/100;
+    const freqScale = horizonHours <= 1 ? 1 : horizonHours <= 24 ? 0.6 : 0.3;
+    const noise = (Math.sin(i*1.3*freqScale+seed*5.1)*0.3 + Math.sin(i*3.7*freqScale+seed*2.3)*0.18 + Math.cos(i*0.9*freqScale+seed*8.4)*0.12 + Math.sin(i*5.1*freqScale+seed*1.7)*0.08) * (1.2+Math.abs(sentimentScore)*0.2) * currentPrice/100;
     const d = new Date(t);
     const label = horizonHours<=24 ? d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',hour:'2-digit'});
     result.push({t, price: currentPrice+trendComp+noise, label, index:i});
@@ -155,29 +177,31 @@ function switchTab(t) { state.activeTab = t; render(); }
 function drawChart(curveData, currency, currentPrice, chartColor) {
   const canvas = document.getElementById('predChart');
   if(!canvas) return;
-  if(state.chartInstance) { state.chartInstance.destroy(); }
+  if(state.chartInstance) { state.chartInstance.destroy(); state.chartInstance = null; }
   const ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0,0,0,200);
-  gradient.addColorStop(0, chartColor+'44');
+  const gradient = ctx.createLinearGradient(0,0,0,220);
+  gradient.addColorStop(0, chartColor+'55');
   gradient.addColorStop(1, chartColor+'00');
-  state.chartInstance = new Chart(canvas, {
+  state.chartInstance = new Chart(ctx, {
     type:'line',
     data: {
       labels: curveData.map(p=>p.label),
       datasets: [{
         data: curveData.map(p=>p.price),
         borderColor: chartColor, borderWidth:2.5, backgroundColor: gradient, fill:true,
-        pointRadius:0, pointHoverRadius:6, pointHoverBackgroundColor:chartColor, pointHoverBorderColor:'#fff', pointHoverBorderWidth:2, tension:0.4
+        pointRadius:0, pointHoverRadius:7, pointHitRadius:20, pointHoverBackgroundColor:chartColor, pointHoverBorderColor:'#fff', pointHoverBorderWidth:2, tension:0.4
       }]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      interaction: { mode:'index', intersect:false },
       plugins: { legend:{display:false}, tooltip: {
-        backgroundColor:'#1a1a2e', borderColor:'#ffffff22', borderWidth:1, padding:12, titleColor:'#666', bodyColor:'#fff', titleFont:{size:10}, bodyFont:{size:16,weight:'bold'},
+        enabled:true, mode:'index', intersect:false,
+        backgroundColor:'#1a1a2e', borderColor:'#ffffff33', borderWidth:1, padding:12, titleColor:'#888', bodyColor:'#fff', titleFont:{size:10}, bodyFont:{size:16,weight:'bold'}, displayColors:false,
         callbacks: { label: c => fmtFull(c.raw, currency), title: items => items[0].dataIndex===0 ? 'MAINTENANT' : items[0].label }
       }},
       scales: {
-        x: { ticks:{color:'#333',font:{size:9}}, grid:{display:false} },
+        x: { ticks:{color:'#333',font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:6}, grid:{display:false} },
         y: { ticks:{color:'#333',font:{size:9}, callback:v=>fmt(v,currency)}, grid:{color:'#ffffff08'} }
       }
     }
@@ -201,14 +225,14 @@ function render() {
   const predictions = state.liveData?.predictions || {};
   const indicators = state.liveData?.indicators || {};
   const news = state.liveData?.news || [];
-  const facteurs = state.liveData?.facteurs || {};
+  const facteurs = getFacteurs(state, indicators, sentimentGlobal, currentPrice);
   const resume = state.liveData?.resume || "";
 
   const horizonObj = HORIZONS.find(h=>h.key===state.horizon);
   const predKey = state.horizon==='1h'?'1h':state.horizon==='1sem'?'1sem':'24h';
   const pred = predictions[predKey] || {direction:"STABLE",amplitude:1,confiance:60};
   const chartColor = pred.direction==='HAUSSE'?'#00d4aa':pred.direction==='BAISSE'?'#ff4d6d':'#888';
-  const curveData = generateFutureCurve(currentPrice, pred.direction, pred.amplitude, horizonObj.hours, scoresentiment);
+  const curveData = generateFutureCurve(currentPrice, pred.direction, pred.amplitude, horizonObj.hours, scoresentiment, state.asset);
 
   const sentimentColor = sentimentGlobal==='BULLISH'?'#00d4aa':sentimentGlobal==='BEARISH'?'#ff4d6d':'#888';
   const sentimentIcon = sentimentGlobal==='BULLISH'?'▲':sentimentGlobal==='BEARISH'?'▼':'→';
@@ -259,7 +283,7 @@ function render() {
     ${state.activeTab==='prediction' ? `
       <div class="chart-wrap">
         <div class="section-label">Prédiction ${state.asset} · ${horizonObj.label} · <span style="color:${sentimentColor}">${sentimentGlobal}</span></div>
-        <div style="height:220px"><canvas id="predChart"></canvas></div>
+        <div style="height:220px;width:100%;position:relative"><canvas id="predChart"></canvas></div>
         <div style="font-size:9px;color:#222;text-align:center;letter-spacing:1px;margin-top:2px">TOUCHE LA COURBE POUR VOIR LES VALEURS PRÉDITES</div>
       </div>
       <div class="horizon-bar">
@@ -348,7 +372,7 @@ function render() {
 
 setInterval(()=>{
   state.countdown--;
-  if(state.countdown<=0) { state.countdown=30; fetchLiveData(); }
+  if(state.countdown<=0) { state.countdown=10; fetchLiveData(); }
   else { const el = document.querySelector('.countdown'); if(el) el.textContent = state.countdown+'s'; }
 }, 1000);
 
