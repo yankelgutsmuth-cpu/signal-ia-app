@@ -1,5 +1,5 @@
 // =====================================================================
-// app.js — Le "cerveau" de l'appli Uppercut.
+// app.js — Le "cerveau" de l'appli Yankito.
 //   1. Sauvegarde des données sur le téléphone
 //   2. Outils (dates, formats…)
 //   3. Générateur de séances
@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------
 // 1. SAUVEGARDE — tout est stocké dans le navigateur (localStorage)
 // ---------------------------------------------------------------------
-const CLE_STOCKAGE = 'uppercut.v1';
+const CLE_STOCKAGE = 'yankito.v1';
 const JOURS_BOXE = [1, 3, 5]; // 0 = dimanche, 1 = lundi … 6 = samedi
 
 function etatParDefaut() {
@@ -689,7 +689,7 @@ function vuePlus() {
       <input type="file" id="fichier-import" accept="application/json,.json" hidden>
       <button class="lien danger" data-action="reinitialiser">Tout effacer</button>
     </div>
-    <p class="aide centre">Uppercut · version 1 · ${etat.carnet.length} séances enregistrées</p>
+    <p class="aide centre">Yankito · version 1 · ${etat.carnet.length} séances enregistrées</p>
   `;
 }
 
@@ -818,11 +818,11 @@ function voirEntree(id) {
 // ---------------------------------------------------------------------
 async function exporter() {
   const texte = JSON.stringify(etat, null, 2);
-  const nom = `uppercut-sauvegarde-${isoLocal(new Date())}.json`;
+  const nom = `yankito-sauvegarde-${isoLocal(new Date())}.json`;
   try {
     const fichier = new File([texte], nom, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
-      await navigator.share({ files: [fichier], title: 'Sauvegarde Uppercut' });
+      await navigator.share({ files: [fichier], title: 'Sauvegarde Yankito' });
       return;
     }
   } catch (e) { if (e.name === 'AbortError') return; }
@@ -841,7 +841,7 @@ function importer(fichier) {
       if (!confirm(`Remplacer tes données par cette sauvegarde (${donnees.carnet.length} séances) ?`)) return;
       etat = Object.assign(etatParDefaut(), donnees);
       sauver(); afficher(); toast('Sauvegarde importée ✅');
-    } catch (e) { alert('Ce fichier n\'est pas une sauvegarde Uppercut valide.'); }
+    } catch (e) { alert('Ce fichier n\'est pas une sauvegarde Yankito valide.'); }
   };
   lecteur.readAsText(fichier);
 }

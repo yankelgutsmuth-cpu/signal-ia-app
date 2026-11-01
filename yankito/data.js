@@ -176,7 +176,7 @@ const EXOS = [
   { id: 'mb_rotatif', nom: 'Lancer rotatif médecine-ball contre un mur', cats: ['explo'], eq: ['mb'], pat: 'rotation', uni: true,
     charge: { t: 'mb', pref: 'max' }, dose: '6 / côté',
     note: 'De profil au mur, pivote le pied arrière comme pour un crochet et lance. LA base de la puissance des coups.' },
-  { id: 'mb_scoop', nom: 'Lancer "uppercut" médecine-ball', cats: ['explo'], eq: ['mb'], pat: 'rotation', uni: true,
+  { id: 'mb_scoop', nom: 'Lancer "yankito" médecine-ball', cats: ['explo'], eq: ['mb'], pat: 'rotation', uni: true,
     charge: { t: 'mb', pref: 'max' }, dose: '6 / côté',
     note: 'Ballon bas sur la hanche, pivote et projette-le en diagonale vers le haut contre le mur.' },
   { id: 'directs_el', nom: 'Directs explosifs avec élastique', cats: ['explo'], eq: ['el'], pat: 'boxe', uni: true,
@@ -261,7 +261,7 @@ const EXOS = [
 const THEMES_ROUNDS = [
   'Jab-direct + déplacements',
   'Crochets + esquives',
-  'Uppercuts + remises',
+  'Yankitos + remises',
   'Enchaînements de 4-5 coups',
   'Puissance : 10 s à fond / 10 s technique',
   'Contre-attaques : esquive puis remise',

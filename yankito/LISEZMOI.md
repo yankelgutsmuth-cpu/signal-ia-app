@@ -1,4 +1,4 @@
-# 🥊 Uppercut — Boxe & Muscu
+# 🥊 Yankito — Boxe & Muscu
 
 Application web installable sur l'iPhone : générateur de séances + carnet d'entraînement.
 Aucun compte, aucun serveur : les données restent sur ton téléphone.
@@ -33,7 +33,7 @@ Ouvre `data.js`, copie une ligne de la liste `EXOS`, change l'`id` (unique), le 
 
 ## Mettre à jour l'appli sur le téléphone
 
-Après une modification, change `VERSION` dans `sw.js` (par exemple `uppercut-v2`), puis ferme et rouvre l'appli.
+Après une modification, change `VERSION` dans `sw.js` (par exemple `yankito-v2`), puis ferme et rouvre l'appli.
 
 ## Prochaines étapes prévues
 
