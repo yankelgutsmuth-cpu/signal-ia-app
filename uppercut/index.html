@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover : l'appli utilise tout l'écran de l'iPhone (encoche comprise) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Uppercut</title>
+  <meta name="theme-color" content="#0b0b10">
+  <!-- Pour que l'iPhone l'installe comme une vraie appli -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Uppercut">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="entete">
+    <div class="logo">UPPER<span>CUT</span></div>
+    <div class="sous-titre">Boxe · Muscu · Progrès</div>
+  </header>
+
+  <!-- Le contenu de l'onglet actif est dessiné ici par app.js -->
+  <main id="vue"></main>
+
+  <!-- Barre d'onglets en bas de l'écran -->
+  <nav class="barre">
+    <button class="onglet" data-onglet="seance"><span>⚡</span>Séance</button>
+    <button class="onglet" data-onglet="carnet"><span>📓</span>Carnet</button>
+    <button class="onglet" data-onglet="plus"><span>⚙︎</span>Plus</button>
+  </nav>
+
+  <div id="feuille" hidden></div>
+  <div id="toast"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
